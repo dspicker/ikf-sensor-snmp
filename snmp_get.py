@@ -1,70 +1,71 @@
-import sys
+"""
+Get measurement values from mess-pc Ethernetbox via snmp protocol.
+
+Also see https://www.messpc.de/snmp.php
+
+By Dennis Spicker, 2025
+"""
+
 import time
 import csv
 import os.path
-from pysnmp.entity.rfc3413.oneliner import cmdgen
+import asyncio
+import pysnmp.hlapi.v1arch.asyncio as psnmp
 
-csv_filename = "/home/dspicker/environment_monitoring/env_data.csv"
-sysname_temp = '.1.3.6.1.4.1.14848.2.1.2.1.5.3'
-sysname_humi = '.1.3.6.1.4.1.14848.2.1.2.1.5.7'
-host = '141.2.243.203'
-
-current_temp = 0.0
-current_humidity = 0.0
-
-time_str = time.strftime("%Y-%m-%d %H:%M", time.localtime())
-epoch = time.mktime(time.localtime())
-
-#print("{} Start of Script".format(time_str))
-
-# Define a PySNMP CommunityData object named auth, by providing the SNMP community string
-auth = cmdgen.CommunityData('public', None, 0)
-
-# Define the CommandGenerator, which will be used to send SNMP queries
-cmdGen = cmdgen.CommandGenerator()
-
-# Query a network device using the getCmd() function, providing the auth object, a UDP transport
-# our OID for SYSNAME, and don't lookup the OID in PySNMP's MIB's
-errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(
-    auth,
-    cmdgen.UdpTransportTarget((host, 161)),
-    cmdgen.MibVariable(sysname_temp),
-    lookupMib=False,
-)
-# Check if there was an error querying the device
-if errorIndication is not None  or errorStatus is True:
-    print ('Error: {} {} {}'.format(errorIndex, errorStatus, errorIndication))
-else:
-    for oid, val in varBinds:
-        #print(oid.prettyPrint(), val.prettyPrint())
-        current_temp = float(val.prettyPrint()) / 10.0
+SNMP_HOST = "141.2.243.203"
+SNMP_OID_TEMPSENSOR  = '.1.3.6.1.4.1.14848.2.1.2.1.5.3'
+SNMP_OID_HUMIDSENSOR = '.1.3.6.1.4.1.14848.2.1.2.1.5.7'
 
 
-errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(
-    auth,
-    cmdgen.UdpTransportTarget((host, 161)),
-    cmdgen.MibVariable(sysname_humi),
-    lookupMib=False,
-)
-if errorIndication is not None  or errorStatus is True: 
-    print ('Error: {} {} {}'.format(errorIndex, errorStatus, errorIndication))
-    sys.exit()
-else:
-    for oid, val in varBinds:
-        #print(oid.prettyPrint(), val.prettyPrint())
-        current_humidity = float(val.prettyPrint()) / 10.0
+async def run_snmp_request(requested_oid: str):
+    """ Executes one snmp get request and returns the sensor value as float. """
+    value = 0.0
 
-#degree_sign = u'\N{DEGREE SIGN}'
-#print("Epoch       ,Time            ,Humidity %RH ,Temperature C")
-#print('{}, {}, {}        , {} '.format(epoch, time_str, current_humidity, current_temp))
+    error_indication, error_status, error_index, var_binds = await psnmp.get_cmd(
+        psnmp.SnmpDispatcher(),
+        psnmp.CommunityData('public', 0),  # mpModel: SNMP version - 0 for SNMPv1 and 1 for SNMPv2c.
+        await psnmp.UdpTransportTarget.create((SNMP_HOST, 161)),
+        psnmp.ObjectType(psnmp.ObjectIdentity(requested_oid)),
+        lookupMib=False
+    )
 
-if not os.path.isfile(csv_filename) :
-    file = open(csv_filename, "w", newline='', encoding='utf-8')
-    file.write("Epoch,Time,Humidity %RH,Temperature C\n")
-    file.close()
+    # Check if there was an error querying the device
+    if error_indication is not None  or error_status is True:
+        print (f"Error: {error_index} {error_status} {error_indication}")
+        for oid, val in var_binds:
+            print(oid.prettyPrint(), val.prettyPrint())
+        print(time.strftime("%Y-%m-%d %H:%M", time.localtime()))
+    else:
+        for oid, val in var_binds:
+            #print(oid.prettyPrint(), val.prettyPrint())
+            value = float(val.prettyPrint()) / 10.0
 
-with open(csv_filename, 'a', newline='', encoding='utf-8') as csv_file:
-    writer = csv.writer(csv_file, delimiter=",")
-    writer.writerow([epoch, time_str, current_humidity, current_temp ])
+    return value
 
-#print("finish.")
+
+async def main():
+    """ Main function of this script. """
+    current_temp = await run_snmp_request(SNMP_OID_TEMPSENSOR)
+    current_humidity = await run_snmp_request(SNMP_OID_HUMIDSENSOR)
+
+    time_str = time.strftime("%Y-%m-%d %H:%M", time.localtime())
+    epoch = time.mktime(time.localtime())
+
+    csv_filename = "env_data.csv"
+    csv_fullpath = os.getcwd() + "/" + csv_filename
+
+    if not os.path.isfile(csv_fullpath) :
+        file = open(csv_fullpath, "w", newline='', encoding='utf-8')
+        file.write("Epoch,Time,Humidity %RH,Temperature C\n")
+        file.close()
+
+    with open(csv_fullpath, 'a', newline='', encoding='utf-8') as csv_file:
+        writer = csv.writer(csv_file, delimiter=",")
+        writer.writerow([epoch, time_str, current_humidity, current_temp ])
+
+    #print( "Epoch       , Time            , Humidity %RH, Temperature C")
+    #print(f"{epoch}, {time_str}, {current_humidity}        , {current_temp} ")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
