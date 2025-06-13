@@ -1,14 +1,16 @@
+import os
 import datetime
 import pandas as pd
 from matplotlib import pyplot as plt
-import matplotlib
+import matplotlib.dates
 
 
 matplotlib.use('tkagg')
 degree_sign = '\N{DEGREE SIGN}'
 
-csv_filename = "/home/dspicker/environment_monitoring/env_data.csv"
-csv_data = pd.read_csv(csv_filename, header=0, parse_dates=[1], date_format="%Y-%m-%d %H:%M")
+csv_filename = "env_data.csv"
+csv_path = os.getcwd() + "/" + csv_filename
+csv_data = pd.read_csv(csv_path, header=0, parse_dates=[1], date_format="%Y-%m-%d %H:%M")
 
 #csv_data['Datetime'] = pd.to_datetime(csv_data['Epoch'], unit='s', utc=True)
 #csv_data['Datetime'] = csv_data['Datetime'].dt.tz_convert('Europe/Berlin')
@@ -20,8 +22,8 @@ data_lasttwodays = csv_data.loc[csv_data['Time'] >= start_time.strftime("%Y-%m-%
 mean_hum = data_lasttwodays['Humidity %RH'].mean()
 mean_temp = data_lasttwodays['Temperature C'].mean()
 print(f"Plotting data from {start_time.strftime('%a %d.%m.%y %H:%M')} until now.")
-print("Mean humidity    {0:.2f} %RH".format(mean_hum))
-print("Mean temperature {0:.2f} {1}C".format(mean_temp, degree_sign))
+print(f"Mean humidity    {mean_hum:.2f} %RH")
+print(f"Mean temperature {mean_temp:.2f} {degree_sign}C")
 #print(data_lasttwodays)
 #print(data_lasttwodays.index)
 
