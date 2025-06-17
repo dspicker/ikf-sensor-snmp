@@ -60,7 +60,7 @@ async def main():
         file.close()
 
     with open(csv_fullpath, 'a', newline='', encoding='utf-8') as csv_file:
-        writer = csv.writer(csv_file, delimiter=",")
+        writer = csv.writer(csv_file, delimiter=",",lineterminator='\n')
         writer.writerow([epoch, time_str, current_humidity, current_temp ])
 
     #print( "Epoch       , Time            , Humidity %RH, Temperature C")
@@ -68,4 +68,8 @@ async def main():
 
 
 if __name__ == "__main__":
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+
     asyncio.run(main())
