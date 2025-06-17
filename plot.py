@@ -27,7 +27,8 @@ print(f"Mean temperature {mean_temp:.2f} {degree_sign}C")
 #print(data_lasttwodays)
 #print(data_lasttwodays.index)
 
-fig, (axes_hum, axes_temp) = plt.subplots(2, 1, sharex=True, figsize=(16,9))
+fig, (axes_hum, axes_temp) = plt.subplots(2, 1, sharex=True, figsize=(16,9),
+    gridspec_kw={ 'hspace': 0.05, 'left': 0.07, 'right':0.95, 'top':0.95, 'bottom':0.09})
 
 #fig_hum = plt.figure(0)
 #axes_hum: matplotlib.axes = data_lasttwodays.plot(1,2)
