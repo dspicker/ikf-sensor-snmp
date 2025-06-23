@@ -52,7 +52,7 @@ async def main():
     epoch = time.mktime(time.localtime())
 
     csv_filename = "env_data.csv"
-    csv_fullpath = os.getcwd() + "/" + csv_filename
+    csv_fullpath = os.path.join(os.path.abspath(os.getcwd()), csv_filename)
 
     if not os.path.isfile(csv_fullpath) :
         file = open(csv_fullpath, "w", newline='', encoding='utf-8')

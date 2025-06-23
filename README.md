@@ -15,4 +15,4 @@ E.g. to execute it every 10 minutes:
 
 ## Plotting
 
-The files `plot.py`and `àutoplot.py` create a plot of the last 48 hours.
+The files `plot.py`and `autoplot.py` create a plot of the last 48 hours.
